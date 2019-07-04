@@ -9,7 +9,7 @@ This code is currently work in progress and is not ready to be run. Use at your 
 ## Requirements
 
 * iSAM 1.7
-* OpenCV (latest git version, compile from source)
+* OpenCV 3.2 (latest git version, compile from source)
 * OpenCV contrib (xfeatures2d)
 * PCL 1.8
 * Ceres Solver
