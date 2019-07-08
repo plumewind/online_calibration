@@ -29,31 +29,6 @@ void loadCalibration(
                 calib_stream >> cam_mat[cam](i,j);
             }
         }
-        // Eigen::Matrix3f K = cam_mat[cam].block<3,3>(0,0);
-        // Eigen::Matrix3f Kinv = K.inverse();
-        // Eigen::Vector3f Kt = cam_mat[cam].block<3,1>(0,3);
-        // Eigen::Vector3f t = Kinv * Kt;
-        // cam_trans.push_back(t);
-        // cam_intrinsic.push_back(K);
-        // cam_intrinsic_inv.push_back(K.inverse());
-
-        // cam_pose.push_back(Eigen::Matrix4f::Identity());
-        // cam_pose[cam](0, 3) = t(0);
-        // cam_pose[cam](1, 3) = t(1);
-        // cam_pose[cam](2, 3) = t(2);
-
-        // Eigen::Vector3f min_pt;
-        // min_pt << 0, 0, 1;
-        // min_pt = Kinv * min_pt;
-        // min_x.push_back(min_pt(0) / min_pt(2));
-        // min_y.push_back(min_pt(1) / min_pt(2));
-        // //std::cerr << "min_pt: " << min_pt << std::endl;
-        // Eigen::Vector3f max_pt;
-        // max_pt << img_width, img_height, 1;
-        // max_pt = Kinv * max_pt;
-        // max_x.push_back(max_pt(0) / max_pt(2));
-        // max_y.push_back(max_pt(1) / max_pt(2));
-        // //std::cerr << "max_pt: " << max_pt << std::endl;
     }
     calib_stream >> P;
     for(int i=0; i<3; i++) {

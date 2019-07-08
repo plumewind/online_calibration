@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/include/**",
+                "/usr/include/eigen3",
+                "/usr/local/opencv320/share/OpenCV",
+                "/usr/local/pcl180/share/pcl-1.8",
+                "/usr/local/include/isam"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "clang-x64",
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json"
+        }
+    ],
+    "version": 4
+}
