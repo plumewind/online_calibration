@@ -14,7 +14,7 @@ namespace online_calibration
 	class Viewer
 	{
 	public:
-		Viewer(int num_cams_, CameraFrame* view_frames_mp, Tracking* view_track_mp);
+		Viewer(int num_cams_, CameraFrame* view_frames_mp, Tracking* view_track_mp, Solver* view_solver_mp);
 		~Viewer();
 		
 		void view_depth_assoc(cv::Mat &imgs, int cam, int  frame,
@@ -32,6 +32,7 @@ namespace online_calibration
 
 		CameraFrame* view_frames;
 		Tracking* view_track;
+		Solver* view_solver;
 	};
 }
 

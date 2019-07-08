@@ -8,15 +8,17 @@ namespace online_calibration
 
 		flow_outlier = 20000.0; // pixels^2, squared distance of optical flow
 		quality_level = 0.001; // good features to track quality
-		min_distance = 12;// pixel distance between nearest features
+		min_distance = 12.0;// pixel distance between nearest features
 		lkt_window = 21;
 		lkt_pyramid = 4; 
-		corner_count = 3000; // number of features
 		match_thresh = 29;
 		depth_assoc_thresh = 0.015;
+		corner_count = 3000; // number of features
 
-		img_width = 1226;
-		img_height = 370; // kitti 数据集中图像的宽度和高度
+		// img_width = 1226;
+		// img_height = 370; // kitti 数据集中图像的宽度和高度
+		img_width = 1241;
+		img_height = 376; // kitti 数据集中图像的宽度和高度
 		 // FREAK feature descriptor
 		track_freak = cv::xfeatures2d::FREAK::create(
 				false, // orientation normalization
@@ -36,7 +38,7 @@ namespace online_calibration
 	void Tracking::setCameraKinv(
 				Eigen::Matrix4f& velo2cam,
 				std::vector<Eigen::Matrix<float, 3, 4>,
-    			Eigen::aligned_allocator<Eigen::Matrix<float, 3, 4>>>& cam_mat)
+    				Eigen::aligned_allocator<Eigen::Matrix<float, 3, 4>>>& cam_mat)
 	{
 		for(int cam=0; cam<cam_mat.size(); cam++) {
 
@@ -81,12 +83,12 @@ namespace online_calibration
         const int frame1,
         const int frame2
         ) {
-		static bool init_flag = false;
-		if(init_flag == false){
-			img_width = img1.cols;
-			img_height = img1.rows;
-			init_flag = true;
-		}
+		// static bool init_flag = false;
+		// if(init_flag == false){
+		// 	img_width = img1.cols;
+		// 	img_height = img1.rows;
+		// 	init_flag = true;
+		// }
 		const Eigen::Matrix3f &Kinv1 = cam_intrinsic_inv[cam1];
 		const Eigen::Matrix3f &Kinv2 = cam_intrinsic_inv[cam2];
 
@@ -119,11 +121,12 @@ namespace online_calibration
 		// int col_cells = img_width / min_distance + 2,
 		//     row_cells = img_height / min_distance + 2;
 		//std::vector<std::vector<cv::Point2f>> occupied(col_cells * row_cells);
+		int count = 0;
 		for(int i=0; i<m; i++) {
 			if(!status[i]) {
 				continue;
 			}
-			if(Tools::dist2(points1[i], points2[i]) > flow_outlier) {
+			if((Tools::dist2(points1[i], points2[i]) - flow_outlier) > 0)  {
 				continue;
 			}
 			// somehow points can be tracked to negative x and y
@@ -133,15 +136,17 @@ namespace online_calibration
 				continue;
 			}
 
-			track_frames->keypoints_p[cam2][frame2].push_back(points2[i]);//保存已跟踪点的相机像素坐标
-			track_frames->keypoints[cam2][frame2].push_back(              //保存已跟踪点的相机归一化坐标
+			track_frames->keypoints_p[cam2][frame2].push_back(points2[i]);//保存已跟踪点的特征点像素坐标
+			track_frames->keypoints[cam2][frame2].push_back(              //保存已跟踪点的特征点归一化坐标
 					CameraFrame::pixel2canonical(points2[i], Kinv2)
 					);
 			track_frames->keypoint_ids[cam2][frame2].push_back(           //保存已跟踪点的id
 					track_frames->keypoint_ids[cam1][frame1][i]);
 			track_frames->descriptors[cam2][frame2].push_back(
 					track_frames->descriptors[cam1][frame1].row(i).clone());
+			count++;
 		}
+		//std::cout<<"<debug>Tracking::trackFeatures count"<<(count)<<std::endl;
 	}
 	void Tracking::consolidateFeatures(
 	const int cam,
@@ -226,12 +231,12 @@ namespace online_calibration
 		int i=0;
 		track_freak->compute(img, cvKP, tmp_tmp_descriptors);
 		for(int j=0; j<cvKP.size(); j++) {
-			while(cv::norm((*keypoints_p)[i] - cvKP[j].pt) > kp_EPS) {
+			while(cv::norm((*keypoints_p)[i] - cvKP[j].pt) > 1e-6) {//kp_EPS=1e-6
 				i++;
 			}
 			if(cv::norm((*descriptors).row(i),
 						tmp_tmp_descriptors.row(j),
-						cv::NORM_HAMMING) < match_thresh) {
+						cv::NORM_HAMMING) < 29.0) {//match_thresh=29.0
 				tmp_keypoints.push_back((*keypoints)[i]);
 				tmp_keypoints_p.push_back((*keypoints_p)[i]);
 				tmp_keypoint_ids.push_back((*keypoint_ids)[i]);
@@ -481,7 +486,7 @@ namespace online_calibration
 			track_frames->keypoint_ids[cam][frame].push_back(id_counter++);
 			detected++;
 		}
-		//std::cerr << "Detected: " << detected << std::endl;
+		//std::cerr << "<debug>Detected: " << detected << std::endl;
 	}
 	void Tracking::removeSlightlyLessTerribleFeatures(
         //std::vector<std::vector<std::vector<cv::Point2f>>> &keypoints,

@@ -415,7 +415,7 @@ namespace online_calibration
 		bool pose_init(const int ba, const int frame, const int dframe, double *transform);
 		bool loopclosure_compute(const int ba, double *transform);
 		void isam_slamInit();
-		static void matchUsingId(
+		void matchUsingId(
 			const std::vector<std::vector<std::vector<int>>> &keypoint_ids,
 			const int cam1,
 			const int cam2,
@@ -423,12 +423,11 @@ namespace online_calibration
 			const int frame2,
 			std::vector<std::pair<int, int>> &matches
         );
-		static void matchUsingId(
+		void matchUsingId(
 			const std::vector<std::vector<std::vector<int>>> &keypoint_ids,
 			const int frame1,
 			const int frame2,
-			std::vector<std::vector<std::pair<int, int>>> &matches,
-			int num_cams = 2
+			std::vector<std::vector<std::pair<int, int>>> &matches
         );
 		void matchFeatures(
         const std::vector<std::vector<cv::Mat>> &descriptors,
@@ -476,7 +475,7 @@ namespace online_calibration
         const std::vector<std::vector<ResidualType>> &residual_type
         );
 		void iSAM_update(int frame, int dframe, Eigen::Matrix4d& dpose);
-		void iSAM_add_keypoint(const int frame, int& id_counter, bool enable_isam);
+		void iSAM_add_keypoint(const int frame, int id_counter, bool enable_isam);
 		void iSAM_add_measurement(const int frame);
 		void triangulatePoint(const int id);
 		void iSAM_print_stats(const int frame);

@@ -54,6 +54,7 @@ namespace online_calibration
 		double	loop_close_thresh, // meters
 				agreement_t_thresh , // meters
 				agreement_r_thresh ; // radians
+		double transform[6];
 
 		Tracking* sys_Tracking;
 		CameraFrame* sys_Frames;

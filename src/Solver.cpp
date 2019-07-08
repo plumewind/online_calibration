@@ -9,8 +9,6 @@ namespace online_calibration
         min_matches = 0; // minimum number of feature matches to proceed
         loop_close_thresh = 10; // meters
         match_thresh = 29; // bits, hamming distance for FREAK features
-        f2f_iterations = 2;
-        icp_iterations = 3;
 
         weight_3D2D = 10,
         weight_2D2D = 500,
@@ -29,23 +27,23 @@ namespace online_calibration
         icp_skip = 200,
 		f2f_iterations = 2,
 		icp_iterations = 3;
-        ba_every = 10; // bundle adjust every this number of frames
+        ba_every = 10; // bundle adjust every this number of frames	
 
-        keypoint_obs_count_hist.resize(1000);
 
-        
-		ceres_poses_mat.resize(num_frames);
-		ceres_poses_mat[0] = Eigen::Matrix4d::Identity();
-		ceres_poses_vec = std::vector<double[6]>(num_frames);
-		landmarks = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
-
-        isam_slamInit();
         added_to_isam_3d = std::vector<std::vector<
         	std::map<int, isam::Pose3d_Point3d_Factor*>>>(num_cams,
             	std::vector<std::map<int, isam::Pose3d_Point3d_Factor*>>(num_frames));
 		added_to_isam_2d = std::vector<std::vector<
 			std::map<int, isam::Monocular_Factor*>>>(num_cams,
 				std::vector<std::map<int, isam::Monocular_Factor*>>(num_frames));
+
+        keypoint_obs_count_hist.resize(1000);
+        ceres_poses_mat.resize(num_frames);
+		ceres_poses_mat[0] = Eigen::Matrix4d::Identity();
+		ceres_poses_vec = std::vector<double[6]>(num_frames);
+		landmarks = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
+
+        isam_slamInit();
 
         isam::Pose3d_Factor* prior2 = new isam::Pose3d_Factor(
             cam_nodes[0][0], origin, noiseless6);
@@ -125,11 +123,14 @@ namespace online_calibration
             monoculars[cam] = isam::MonocularCamera(1, Eigen::Vector2d(0, 0));
             for(int frame = 0; frame < num_frames; frame++) {
                 isam::Pose3d_Node* initial_node = new isam::Pose3d_Node();
+                //initial_node->init(isam::Pose3d(0,0,0,0,0,0));
                 cam_nodes[cam].push_back(initial_node);
             }
             calib_isam->add_node(cam_nodes[cam][0]);
         }
-        
+        //std::cout << "Solver::isam_slamInit  test00-0 "<<*(cam_nodes[0][0])<<std::endl;
+        //std::cout << "Solver::isam_slamInit  test00-1 "<<*(cam_nodes[0][1])<<std::endl;
+
         noiseless6 = isam::Information(1000. * isam::eye(6));
         noisy6 = isam::Information(1 * isam::eye(6));
         isam::Pose3d origin;
@@ -154,7 +155,8 @@ namespace online_calibration
         const int frame1,
         const int frame2,
         std::vector<std::pair<int, int>> &matches
-        ) {
+        ) 
+    {
         std::map<int, int> id2ind;
         for(int ind = 0; ind < keypoint_ids[cam1][frame1].size(); ind++) {
             int id = keypoint_ids[cam1][frame1][ind];
@@ -170,8 +172,7 @@ namespace online_calibration
             const std::vector<std::vector<std::vector<int>>> &keypoint_ids,
             const int frame1,
             const int frame2,
-            std::vector<std::vector<std::pair<int, int>>> &matches,
-            int num_cams
+            std::vector<std::vector<std::pair<int, int>>> &matches
             ) {
         for(int cam=0; cam<num_cams; cam++) {
             matchUsingId(keypoint_ids, cam, cam, frame1, frame2, matches[cam]);
@@ -309,14 +310,6 @@ namespace online_calibration
                     pcl::PointXYZ point3_2, point3_1;
                     if(landmarks_at_frame.count(id)) {
                         point3_2 = landmarks_at_frame.at(id);
-                        /*
-                        if(d2) {
-                            std::cerr << "Using landmark "
-                                << id << ": " << point3_2 
-                                << " " << keypoints_with_depth[cam][frame2]
-                                ->at(has_depth[cam][frame2][point2]) << std::endl;
-                        }
-                        */
                         d2 = true;
                     } else if(d2) {
                         point3_2 = solver_frames->kp_with_depth[cam][frame2]
@@ -716,7 +709,7 @@ namespace online_calibration
         }
         calib_isam->update();
     }
-    void Solver::iSAM_add_keypoint(const int frame, int& id_counter, bool enable_isam)
+    void Solver::iSAM_add_keypoint(const int frame, int id_counter, bool enable_isam)
     {
         if(enable_isam)
         {
@@ -767,7 +760,6 @@ namespace online_calibration
     }
     void Solver::iSAM_add_measurement(const int frame)
     {
-        std::cout << "Solver::iSAM_add_measurement  test0"<<std::endl;
         std::set<int> ids_seen;
         for(int cam=0; cam<num_cams; cam++) {
             for(int i=0; i<solver_frames->keypoints[cam][frame].size(); i++) {
@@ -804,7 +796,6 @@ namespace online_calibration
                     added_to_isam_3d[cam][obs3.first][id] = factor;
                 }
             }
-            std::cout << "Solver::iSAM_add_measurement  test1"<<std::endl;
             for(int cam=0; cam<num_cams; cam++) {
                 for(auto obs2 : solver_frames->keypoint_obs2[id][cam]) {
                     if(added_to_isam_2d[cam][obs2.first].count(id)) {
@@ -815,9 +806,6 @@ namespace online_calibration
                             obs2.second.y
                             );
                     isam::Noise noise2 = isam::Information(1 * isam::eye(2));
-                    std::cout << "Solver::iSAM_add_measurement  test1.3 cam_node = "<<(*(cam_nodes[cam][obs2.first]))<<std::endl;
-                    std::cout << "Solver::iSAM_add_measurement  cam = "<<(cam)<<std::endl;
-                    std::cout << "Solver::iSAM_add_measurement  obs2.first = "<<(obs2.first)<<std::endl;
                     isam::Monocular_Factor* factor =
                         new isam::Monocular_Factor(
                                 cam_nodes[cam][obs2.first],
@@ -826,22 +814,19 @@ namespace online_calibration
                                 measurement,
                                 noise2
                                 );
-                    std::cout << "Solver::iSAM_add_measurement  test1.4"<<std::endl;
                     calib_isam->add_factor(factor);
-                    std::cout << "Solver::iSAM_add_measurement  test1.5"<<std::endl;
                     added_to_isam_2d[cam][obs2.first][id] = factor;
-                    std::cout << "Solver::iSAM_add_measurement  test1.7"<<std::endl;
                 }
             }
-            std::cout << "Solver::iSAM_add_measurement  test2"<<std::endl;
         }
 
     }
     void Solver::triangulatePoint(const int id)
     {
-        bool initial_guess = keypoint_added[id];
-        pcl::PointXYZ &point = landmarks->at(id);
-        const std::vector<double[6]> &camera_poses = ceres_poses_vec;
+        //bool initial_guess = keypoint_added[id];
+        //pcl::PointXYZ &point = landmarks->at(id);
+        //const std::vector<double[6]> &camera_poses = ceres_poses_vec;
+
         // given the 2D and 3D observations, the goal is to obtain
         // the 3D position of the point
         int initialized = 0;
@@ -850,10 +835,10 @@ namespace online_calibration
         // 2: two 2d measurements
         // 3: initialized
         double transform[3] = {0, 0, 10};
-        if(initial_guess) {
-            transform[0] = point.x;
-            transform[1] = point.y;
-            transform[2] = point.z;
+        if(keypoint_added[id]) {
+            transform[0] = (landmarks->at(id)).x;
+            transform[1] = (landmarks->at(id)).y;
+            transform[2] = (landmarks->at(id)).z;
             initialized = 3;
         }
 
@@ -864,28 +849,19 @@ namespace online_calibration
         ceres::Solver::Summary summary;
         for(int cam=0; cam<num_cams; cam++) {
             for(auto obs3 : solver_frames->keypoint_obs3[id][cam]) {
-                /*
-                std::cerr << "3D observation " <<  obs3.second
-                    << " at " << obs3.first << ": ";
-                for(int i=0; i<6; i++) {
-                    std::cerr << camera_poses[obs3.first][i] << " ";
-                }
-                std::cerr << std::endl;
-                std::cerr << util::pose_mat2vec(camera_poses[obs3.first]);
-                std::cerr << std::endl;
-                */
+    
                 ceres::CostFunction* cost_function =
                     new ceres::AutoDiffCostFunction<triangulation3D, 3, 3>(
                             new triangulation3D(
                                 obs3.second.x,
                                 obs3.second.y,
                                 obs3.second.z,
-                                camera_poses[obs3.first][0],
-                                camera_poses[obs3.first][1],
-                                camera_poses[obs3.first][2],
-                                camera_poses[obs3.first][3],
-                                camera_poses[obs3.first][4],
-                                camera_poses[obs3.first][5]
+                                ceres_poses_vec[obs3.first][0],
+                                ceres_poses_vec[obs3.first][1],
+                                ceres_poses_vec[obs3.first][2],
+                                ceres_poses_vec[obs3.first][3],
+                                ceres_poses_vec[obs3.first][4],
+                                ceres_poses_vec[obs3.first][5]
                                 )
                             );
                 problem.AddResidualBlock(
@@ -901,25 +877,18 @@ namespace online_calibration
         }
         for(int cam=0; cam<num_cams; cam++) {
             for(auto obs2 : solver_frames->keypoint_obs2[id][cam]) {
-                /*
-                std::cerr << "2D observation " <<  obs2.second << ": ";
-                for(int i=0; i<6; i++) {
-                    std::cerr << camera_poses[obs2.first][i] << " ";
-                }
-                std::cerr << ", " << cam_trans[cam].transpose();
-                std::cerr << std::endl;
-                */
+
                 ceres::CostFunction* cost_function =
                     new ceres::AutoDiffCostFunction<triangulation2D, 2, 3>(
                             new triangulation2D(
                                 obs2.second.x,
                                 obs2.second.y,
-                                camera_poses[obs2.first][0],
-                                camera_poses[obs2.first][1],
-                                camera_poses[obs2.first][2],
-                                camera_poses[obs2.first][3],
-                                camera_poses[obs2.first][4],
-                                camera_poses[obs2.first][5],
+                                ceres_poses_vec[obs2.first][0],
+                                ceres_poses_vec[obs2.first][1],
+                                ceres_poses_vec[obs2.first][2],
+                                ceres_poses_vec[obs2.first][3],
+                                ceres_poses_vec[obs2.first][4],
+                                ceres_poses_vec[obs2.first][5],
                                 solver_track->cam_trans[cam](0),
                                 solver_track->cam_trans[cam](1),
                                 solver_track->cam_trans[cam](2)
@@ -935,10 +904,9 @@ namespace online_calibration
             }
         }
         ceres::Solve(options, &problem, &summary);
-        point.x = transform[0];
-        point.y = transform[1];
-        point.z = transform[2];
-
+        (landmarks->at(id)).x = transform[0];
+        (landmarks->at(id)).y = transform[1];
+        (landmarks->at(id)).z = transform[2];
     }
     void Solver::output_line(Eigen::Matrix4d result, std::ofstream &output)
     {
@@ -958,6 +926,8 @@ namespace online_calibration
     }
     void Solver::iSAM_print_stats(const int frame)
     {
+        std::cout << "***System::iSAM_print_stats  test0"<<std::endl;
+        //sleep(10);
         calib_isam->update();
         calib_isam->print_stats();
         if(frame > 0 && frame % ba_every == 0 || frame == num_frames-1) {
@@ -967,7 +937,7 @@ namespace online_calibration
             }
 
             std::ofstream output;
-            output.open(("results/" + file_name + ".txt").c_str());
+            output.open(("results/" + file_name + ".txt").c_str(), std::ios::out|std::ios::trunc);
             for(int i=0; i<=frame; i++) {
                 auto node = cam_nodes[0][i];
                 Eigen::Matrix4d result = node->value().wTo();
@@ -975,8 +945,6 @@ namespace online_calibration
             }
             output.close();
         }
-
-
     }
 
 

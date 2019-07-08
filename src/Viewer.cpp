@@ -2,8 +2,8 @@
 
 namespace online_calibration
 {
-	Viewer::Viewer(int num_cams_, CameraFrame* view_frames_mp, Tracking* view_track_mp)
-		:view_frames(view_frames_mp), view_track(view_track_mp),num_cams(num_cams_)
+	Viewer::Viewer(int num_cams_, CameraFrame* view_frames_mp, Tracking* view_track_mp, Solver* view_solver_mp)
+		:view_frames(view_frames_mp), view_track(view_track_mp), view_solver(view_solver_mp), num_cams(num_cams_)
 	{
 
 		features_windown = "features_detect";
@@ -108,7 +108,7 @@ namespace online_calibration
 
 				// Draw stereo matches
 				std::vector<std::pair<int, int>> intercamera_matches;
-				Solver::matchUsingId(view_frames->keypoint_ids, 0, 1, frame, frame,
+				view_solver->matchUsingId(view_frames->keypoint_ids, 0, 1, frame, frame,
 						intercamera_matches);
 				for(auto m : intercamera_matches) {
 					auto p1 = view_frames->keypoints_p[0][frame][m.first];

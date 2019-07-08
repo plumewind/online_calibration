@@ -1,41 +1,11 @@
 #pragma once
 
-
 const int   num_cams_actual = 4; // number of cameras actually available in dataset
-//     icp_skip = 200,
-//     f2f_iterations = 2,
-//     icp_iterations = 3,
-//     min_matches = 0, // minimum number of feature matches to proceed
-//     detect_every = 1, // detect new features every this number of frames
-//     ba_every = 10, // bundle adjust every this number of frames
-//     ndiagonal = 4;
-
-// const double
-//     weight_3D2D = 10,
-//     weight_2D2D = 500,
-//     weight_3DPD = 1, // there are more of them
-//     loss_thresh_3D2D = 0.01, // reprojection error, canonical camera units
-//     loss_thresh_2D2D = 0.00002,
-//     loss_thresh_3DPD = 0.1, // physical distance, meters
-//     loss_thresh_3D3D = 0.04, // physical distance, meters
-//     match_thresh = 29, // bits, hamming distance for FREAK features
-//     depth_assoc_thresh = 0.015, // canonical camera units
-//     z_weight = 0.6,
-//     outlier_reject = 5.0,
-//     correspondence_thresh_icp = 0.5,
-//     icp_norm_condition = 1e-5,
-//     agreement_t_thresh = 0.1, // meters
-//     agreement_r_thresh = 0.05, // radians
-//     loop_close_thresh = 10; // meters
-
-// int img_width = 1226, // kitti 数据集中图像的宽度和高度
-//     img_height = 370;
 
 std::vector<Eigen::Matrix<float, 3, 4>,
     Eigen::aligned_allocator<Eigen::Matrix<float, 3, 4>>> cam_mat;//相机的信息矩阵，包含R和t
 
 Eigen::Matrix4f velo_to_cam, cam_to_velo;       //激光，相机之间的坐标转换关系
-// std::vector<double> min_x, max_x, min_y, max_y;//激光点云在图像上的有效投影区域
 
 // std::ofstream output;
 

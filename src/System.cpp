@@ -14,6 +14,9 @@ namespace online_calibration
 		agreement_t_thresh = 0.1, // meters
 		agreement_r_thresh = 0.05; // radians
 
+		transform[0] = 0;transform[1] = 0;transform[2] = 0;
+		transform[3] = 0;transform[4] = 0;transform[5] = 1;
+		//*transform = (double*){0,0,0,0,0,1};
 	}
 	System::~System()
 	{
@@ -27,11 +30,11 @@ namespace online_calibration
 		dframes = std::vector<std::vector<int>>(2);
 
 		//ifdef ENABLE_ISAM
-		std::vector<int> dframe_;
+		//std::vector<int> dframe_;
 		for(int k=1; k<=ndiagonal; k++) {
-        	dframe_.push_back(k);
+        	dframes[0].push_back(k);
     	}
-		dframes.push_back(dframe_);
+		//dframes.push_back(dframe_);
 		img_prevs = std::vector<cv::Mat>(num_cams);
 
 		sys_Frames = new CameraFrame(num_cams, num_frames);
@@ -39,17 +42,15 @@ namespace online_calibration
 		sys_Tracking->setCameraKinv(velo2cam, cam_mat);
 
 		sys_Solver = new Solver(file_name, num_frames, num_cams, sys_Frames, sys_Tracking);
-		sys_Viewer = new Viewer(num_cams, sys_Frames, sys_Tracking);
+		sys_Viewer = new Viewer(num_cams, sys_Frames, sys_Tracking, sys_Solver);
 
 	}
 	void System::run(const cv::Mat &left_img, 
 				const cv::Mat &right_img, 
 				const std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &scans, 
 				int frame
-				)
-	{
-		//sys_Tracking->setCameraKinv(velo2cam, cam_mat);
-		
+	)
+	{	
 		std::vector<cv::Mat> raw_images{left_img, right_img};
 
 		sys_Solver->isam_add_node(frame);
@@ -57,10 +58,11 @@ namespace online_calibration
             for(int cam = 0; cam<num_cams; cam++) {//枚举摄像头
                 for(int prev_cam = 0; prev_cam < num_cams; prev_cam++) {//再次枚举摄像头
                     //左目k-1和左目k，右目k-1和左目k，左目k-1和右目k，右目k-1和右目k
-                    sys_Tracking->trackFeatures(raw_images[prev_cam], raw_images[cam], prev_cam, cam, frame-1, frame);
+                    sys_Tracking->trackFeatures(img_prevs[prev_cam], raw_images[cam], prev_cam, cam, frame-1, frame);
 				}
 			}
 			for(int cam = 0; cam<num_cams; cam++) {//枚举摄像头
+
                 sys_Tracking->consolidateFeatures(cam, frame);
 				sys_Tracking->removeTerribleFeatures(raw_images[cam], cam, frame);
 
@@ -78,13 +80,13 @@ namespace online_calibration
 		std::cerr << "System::run Feature tracking done" << std::endl;
 
 		//优化解相机位姿
-		double transform[6] = {0, 0, 0, 0, 0, 1};
 		for(int ba = 0; ba < 2; ba++) {
 			//std::cout << "System::run  test0 dframes.size = "<<(dframes.size())<<std::endl;
             for(int dframe : dframes[ba]) {
 				//std::cout << "System::run  test1"<<std::endl;
 				if(sys_Solver->pose_init(ba, frame, dframe, transform)==false)
 					break;
+				Eigen::Matrix4d dT = Tools::pose_mat2vec(transform);
 				//std::cout << "System::run  test2"<<std::endl;
 				// if attempting loop closure,
                 // check if things are close by
@@ -122,7 +124,7 @@ namespace online_calibration
                 }
 
 				//输出预测的位姿
-                std::cerr << "Predicted: ";
+                std::cerr << "Predicted transform: ";
                 for(int i=0; i<6; i++) std::cerr << transform[i] << " ";
                 std::cerr << std::endl;
 
@@ -149,7 +151,6 @@ namespace online_calibration
 
 				// check agreement
                 double agreement[6];
-				Eigen::Matrix4d dT = Tools::pose_mat2vec(transform);
                 Tools::pose_vec2mat(dpose * dT.inverse(), agreement);
                 std::cerr << "Agreement: ";
                 for(int i=0; i<6; i++) std::cerr << agreement[i] << " ";
@@ -202,7 +203,7 @@ namespace online_calibration
 			}
 		}
 
-		std::cout << "System::run  test2"<<std::endl;
+		//std::cout << "System::run  test2"<<std::endl;
 		for(int cam = 0; cam<num_cams; cam++) {
             //std::cerr << "inter frame tracked" << std::endl;
             // TODO: don't do this twice
@@ -218,14 +219,15 @@ namespace online_calibration
             sys_Tracking->featureDepthAssociation(scans_valid, projection, cam, frame);
 			img_prevs[cam] = raw_images[cam];
 		}
-		std::cout << "System::run  test3"<<std::endl;
+
+		//std::cout << "System::run  test3"<<std::endl;
 		sys_Solver->iSAM_add_keypoint(frame, id_counter, true);
-		std::cout << "System::run  test3.5 frame = "<<(frame)<<std::endl;
+		//std::cout << "System::run  test3.5 frame = "<<(frame)<<std::endl;
 		sys_Solver->iSAM_add_measurement(frame);
-		std::cout << "System::run  test4"<<std::endl;
+		//std::cout << "System::run  test4"<<std::endl;
 		sys_Solver->iSAM_print_stats(frame);
 
-		std::cerr << "System::run Frame complete: " << frame << std::endl;
+		std::cerr << "***************System::run Frame complete:" << frame <<("***************")<< std::endl;
 	}
 	void System::run(const cv::Mat &img, 
 				const std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &scans, 

@@ -107,7 +107,7 @@ namespace online_calibration
 		double	lkt_pyramid;
 		double	match_thresh;// bits, hamming distance for FREAK features
 		double	depth_assoc_thresh; // canonical camera units
-		double	corner_count; // number of features
+		int	corner_count; // number of features
 
 		int img_width, // kitti 数据集中图像的宽度和高度
     		img_height;
